@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hanshal101/snapwall-backend/database/psql"
-	"github.com/hanshal101/snapwall-backend/models"
+	"github.com/hanshal101/snapwall/database/psql"
+	"github.com/hanshal101/snapwall/models"
 )
 
 type PolicyRequest struct {

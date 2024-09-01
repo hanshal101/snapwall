@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hanshal101/snapwall-backend/database/clickhouse"
-	"github.com/hanshal101/snapwall-backend/database/migrate"
-	"github.com/hanshal101/snapwall-backend/database/psql"
-	"github.com/hanshal101/snapwall-backend/internal/router"
+	"github.com/hanshal101/snapwall/database/clickhouse"
+	"github.com/hanshal101/snapwall/database/migrate"
+	"github.com/hanshal101/snapwall/database/psql"
+	"github.com/hanshal101/snapwall/internal/router"
 	"github.com/joho/godotenv"
 )
 

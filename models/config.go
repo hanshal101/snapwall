@@ -1,6 +1,10 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Policy struct {
 	gorm.Model
@@ -20,4 +24,13 @@ type Port struct {
 	gorm.Model
 	PolicyID uint   `json:"policy_id"`
 	Number   string `json:"number"`
+}
+
+type Log struct {
+	Time        time.Time `json:"time"`
+	Type        string    `json:"type"`
+	Source      string    `json:"source"`
+	Destination string    `json:"destination"`
+	Port        string    `json:"port"`
+	Protocol    string    `json:"protocol"`
 }

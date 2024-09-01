@@ -1,10 +1,12 @@
-module github.com/hanshal101/snapwall-backend
+module github.com/hanshal101/snapwall
 
 go 1.23.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.28.2
 	github.com/gin-gonic/gin v1.10.0
+	github.com/google/gopacket v1.1.19
+	google.golang.org/grpc v1.66.0
 	gorm.io/gorm v1.25.11
 )
 
@@ -28,6 +30,7 @@ require (
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 )
 
 require (
@@ -58,7 +61,7 @@ require (
 	golang.org/x/net v0.28.0
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
+	google.golang.org/protobuf v1.34.1
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.5.9
 )
