@@ -14,6 +14,8 @@ func MigrateModels(DB *gorm.DB) {
 	}
 	DB.AutoMigrate(&models.Policy{})
 	DB.AutoMigrate(&models.IP{})
+
+	
 	DB.AutoMigrate(&models.Port{})
 	log.Println("DB Migrated Successfully")
 }
