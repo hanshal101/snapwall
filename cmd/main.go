@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/hanshal101/snapwall/database/clickhouse"
 	"github.com/hanshal101/snapwall/database/migrate"
@@ -29,7 +30,7 @@ func init() {
 
 func main() {
 	r := gin.Default()
-
+	r.Use(cors.Default())
 	// POLICY Routes
 	policy := r.Group("/policies")
 	router.PolicyRoutes(policy)

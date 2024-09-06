@@ -106,7 +106,7 @@ func GetLogs(c *gin.Context) {
 }
 
 func GetLogsByPort(c *gin.Context) {
-	port := c.Query("portNumber")
+	port := c.Param("portNumber")
 
 	query := `
         SELECT time, type, source, destination, port, protocol
@@ -151,8 +151,8 @@ func GetLogsByPort(c *gin.Context) {
 }
 
 func GetLogsByIP(c *gin.Context) {
-	ioType := c.Query("ioType")
-	ipAddress := c.Query("ipAddress")
+	ioType := c.Param("ioType")
+	ipAddress := c.Param("ipAddress")
 
 	query := fmt.Sprintf(`
         SELECT time, type, source, destination, port, protocol

@@ -126,6 +126,12 @@ func main() {
 			case *layers.UDP:
 				port = fmt.Sprintf("%d", layer.DstPort)
 				protocol = "UDP"
+			case *layers.UDPLite:
+				port = fmt.Sprintf("%d", layer.DstPort)
+				protocol = "UDP"
+			// case *layers.NortelDiscovery:
+			// 	port = fmt.Sprintf("%d", layer.DstPort)
+			// 	protocol = "UDP"
 			default:
 				continue
 			}
