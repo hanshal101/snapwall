@@ -12,12 +12,10 @@ import (
 	"github.com/hanshal101/snapwall/models"
 )
 
-// Convert time.Time to ClickHouse compatible string
 func formatTimestamp(t time.Time) string {
 	return t.Format("2006-01-02 15:04:05")
 }
 
-// This function is to store LOGS in Clickhouse
 func StoreLogs(ctx context.Context, data *models.Log) error {
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS service_logs (
@@ -26,7 +24,8 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 			source String,
 			destination String,
 			port String,
-			protocol String
+			protocol String,
+			severity String
 		) ENGINE = MergeTree()
 		ORDER BY (time, source, destination)
 		PRIMARY KEY (time, source, destination)
@@ -41,14 +40,14 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 	formattedTime := formatTimestamp(data.Time)
 
 	batch, err := clickhouse.CHClient.PrepareBatch(ctx, `
-		INSERT INTO service_logs (time, type, source, destination, port, protocol) VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO service_logs (time, type, source, destination, port, protocol, severity) VALUES (?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		log.Fatalf("Error preparing batch insert statement: %v", err)
 		return err
 	}
 
-	if err := batch.Append(formattedTime, data.Type, data.Source, data.Destination, data.Port, data.Protocol); err != nil {
+	if err := batch.Append(formattedTime, data.Type, data.Source, data.Destination, data.Port, data.Protocol, data.Severity); err != nil {
 		log.Fatalf("Error appending data to batch: %v", err)
 		return err
 	}
@@ -62,10 +61,9 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 	return nil
 }
 
-// This function is to fetch LOGS from Clickhouse
 func GetLogs(c *gin.Context) {
 	query := `
-		SELECT time, type, source, destination, port, protocol
+		SELECT time, type, source, destination, port, protocol, severity
 		FROM service_logs
 	`
 	rows, err := clickhouse.CHClient.Query(context.TODO(), query)
@@ -109,7 +107,7 @@ func GetLogsByPort(c *gin.Context) {
 	port := c.Param("portNumber")
 
 	query := `
-        SELECT time, type, source, destination, port, protocol
+        SELECT time, type, source, destination, port, protocol, severity
         FROM service_logs
         WHERE port = ?
     `
@@ -155,7 +153,7 @@ func GetLogsByIP(c *gin.Context) {
 	ipAddress := c.Param("ipAddress")
 
 	query := fmt.Sprintf(`
-        SELECT time, type, source, destination, port, protocol
+        SELECT time, type, source, destination, port, protocol, severity
         FROM service_logs
         WHERE %s = ?
     `, ioType)

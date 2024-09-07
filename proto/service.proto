@@ -18,6 +18,7 @@ message ServiceRequest {
     string destination = 4;
     string port = 5;
     string protocol = 6;
+    string severity = 7;
 }
 
 
@@ -28,4 +29,5 @@ message ServiceResponse {
     string destination = 4;
     string port = 5;
     string protocol = 6;
+    string severity = 7;
 }

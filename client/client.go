@@ -177,25 +177,11 @@ func main() {
 					return
 				}
 
-				fmt.Printf("Response from server: Time: %s | Source: %s | Destination: %s | Type: %s | Port: %s | Protocol: %s\n",
-					resp.Time, resp.Source, resp.Destination, resp.Type, resp.Port, resp.Protocol)
+				fmt.Printf("Response from server: Time: %s | Source: %s | Destination: %s | Type: %s | Port: %s | Protocol: %s | Severity: %s\n",
+					resp.Time, resp.Source, resp.Destination, resp.Type, resp.Port, resp.Protocol, resp.Severity)
 			}(req)
 		}
 	}
-}
-
-func matchPolicies(policy Policy, req *snapwall.ServiceRequest) bool {
-	for _, pol := range policy.IPs {
-		if req.Source == pol {
-			return false
-		}
-	}
-	for _, pol := range policy.Ports {
-		if req.Port == pol {
-			return false
-		}
-	}
-	return true
 }
 
 func getLocalIPs() ([]string, error) {

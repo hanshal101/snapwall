@@ -6,6 +6,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type SEVERITY string
+
+const (
+	SEVERITY_LOW    SEVERITY = "LOW"
+	SEVERITY_MEDIUM SEVERITY = "MEDIUM"
+	SEVERITY_HIGH   SEVERITY = "HIGH"
+)
+
 type Policy struct {
 	gorm.Model
 	Name  string `json:"name"`
@@ -33,4 +41,5 @@ type Log struct {
 	Destination string    `json:"destination"`
 	Port        string    `json:"port"`
 	Protocol    string    `json:"protocol"`
+	Severity    string    `json:"severity"`
 }
