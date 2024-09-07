@@ -29,6 +29,7 @@ func init() {
 }
 
 func main() {
+	// go enforcer.ReconcileEnforcer(ctx, 5*time.Second)
 	r := gin.Default()
 	r.Use(cors.Default())
 	// POLICY Routes
@@ -40,4 +41,5 @@ func main() {
 	router.LogRoutes(log)
 
 	r.Run(os.Getenv("APP_ADDRESS"))
+	// select {}
 }

@@ -1,11 +1,13 @@
 package policies
 
 import (
+	"context"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hanshal101/snapwall/database/psql"
+	"github.com/hanshal101/snapwall/internal/enforcer"
 	"github.com/hanshal101/snapwall/models"
 )
 
@@ -55,22 +57,40 @@ func CreatePolicies(c *gin.Context) {
 		return
 	}
 
+	var ips []models.IP
 	for _, ip := range req.IPs {
-		if err := tx.Create(&models.IP{PolicyID: policy.ID, Address: ip}).Error; err != nil {
+		ip := models.IP{
+			PolicyID: policy.ID,
+			Address:  ip,
+		}
+		if err := tx.Create(&ip).Error; err != nil {
 			tx.Rollback()
 			log.Printf("Error in creating IPs: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in creating IPs"})
 			return
 		}
+		ips = append(ips, ip)
 	}
 
+	var ports []models.Port
 	for _, port := range req.Ports {
-		if err := tx.Create(&models.Port{PolicyID: policy.ID, Number: port}).Error; err != nil {
+		pt := models.Port{
+			PolicyID: policy.ID,
+			Number:   port,
+		}
+		if err := tx.Create(&pt).Error; err != nil {
 			tx.Rollback()
 			log.Printf("Error in creating Ports: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in creating Ports"})
 			return
 		}
+		ports = append(ports, pt)
+	}
+
+	if err := enforcer.ReconcileEnforcer(context.TODO(), policy, ips, ports); err != nil {
+		log.Fatalf("Error in enforcement: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in creating Ports"})
+		return
 	}
 
 	tx.Commit()
@@ -153,6 +173,13 @@ func UpdatePolicies(c *gin.Context) {
 func DeletePolicy(c *gin.Context) {
 	id := c.Param("policyID")
 
+	var policy models.Policy
+	if err := psql.DB.Where("id = ?", id).Preload("IPs").Preload("Ports").Find(&policy).Error; err != nil {
+		log.Printf("Error in fetching policies: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in fetching policies"})
+		return
+	}
+
 	tx := psql.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -169,20 +196,27 @@ func DeletePolicy(c *gin.Context) {
 		return
 	}
 
-	if err := tx.Where("policy_id = ?", id).Delete(&models.IP{}).Error; err != nil {
+	var ips []models.IP
+	if err := tx.Where("policy_id = ?", id).Delete(&models.IP{}).Find(&ips).Error; err != nil {
 		tx.Rollback()
 		log.Printf("Error in deleting IPs: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in deleting IPs"})
 		return
 	}
 
-	if err := tx.Where("policy_id = ?", id).Delete(&models.Port{}).Error; err != nil {
+	var ports []models.Port
+	if err := tx.Where("policy_id = ?", id).Delete(&models.Port{}).Find(&ports).Error; err != nil {
 		tx.Rollback()
 		log.Printf("Error in deleting Ports: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in deleting Ports"})
 		return
 	}
 
+	if err := enforcer.DeleteRule(context.TODO(), policy, policy.IPs, policy.Ports); err != nil {
+		log.Fatalf("Error in Deleting rule: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in deleting tables"})
+		return
+	}
 	tx.Commit()
 	c.JSON(http.StatusOK, gin.H{"success": "Policy Deleted Successfully"})
 }
