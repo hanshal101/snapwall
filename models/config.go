@@ -3,6 +3,10 @@ package models
 import (
 	"time"
 
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/mem"
 	"gorm.io/gorm"
 )
 
@@ -42,4 +46,12 @@ type Log struct {
 	Port        string    `json:"port"`
 	Protocol    string    `json:"protocol"`
 	Severity    string    `json:"severity"`
+}
+
+type SystemInfo struct {
+	CPUInfo    []cpu.InfoStat         `json:"cpu_info"`
+	MemoryInfo *mem.VirtualMemoryStat `json:"memory_info"`
+	DiskInfo   []disk.UsageStat       `json:"disk_info"`
+	HostInfo   *host.InfoStat         `json:"host_info"`
+	Uptime     uint64                 `json:"uptime"`
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/hanshal101/snapwall/database/migrate"
 	"github.com/hanshal101/snapwall/database/psql"
 	"github.com/hanshal101/snapwall/internal/router"
+	"github.com/hanshal101/snapwall/internal/sysinfo"
 	"github.com/joho/godotenv"
 )
 
@@ -32,6 +33,9 @@ func main() {
 	// go enforcer.ReconcileEnforcer(ctx, 5*time.Second)
 	r := gin.Default()
 	r.Use(cors.Default())
+
+	r.GET("/sysinfo", sysinfo.GetSystemInfo)
+
 	// POLICY Routes
 	policy := r.Group("/policies")
 	router.PolicyRoutes(policy)

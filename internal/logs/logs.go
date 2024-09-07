@@ -85,6 +85,7 @@ func GetLogs(c *gin.Context) {
 			&logEntry.Destination,
 			&logEntry.Port,
 			&logEntry.Protocol,
+			&logEntry.Severity,
 		); err != nil {
 			log.Fatalf("Error scanning row: %v", err)
 			c.JSON(http.StatusBadGateway, gin.H{"error": "Error scanning row"})
@@ -131,6 +132,7 @@ func GetLogsByPort(c *gin.Context) {
 			&logEntry.Destination,
 			&logEntry.Port,
 			&logEntry.Protocol,
+			&logEntry.Severity,
 		); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue
@@ -177,6 +179,51 @@ func GetLogsByIP(c *gin.Context) {
 			&logEntry.Destination,
 			&logEntry.Port,
 			&logEntry.Protocol,
+			&logEntry.Severity,
+		); err != nil {
+			log.Printf("Error scanning row: %v", err)
+			continue
+		}
+
+		logs = append(logs, logEntry)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving logs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, logs)
+}
+
+func GetIntruderLogs(c *gin.Context) {
+	query := `
+        SELECT time, type, source, destination, port, protocol, severity
+        FROM service_logs
+        WHERE severity = ?
+    `
+
+	rows, err := clickhouse.CHClient.Query(context.TODO(), query, "HIGH")
+	if err != nil {
+		log.Printf("Error executing query: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error executing query"})
+		return
+	}
+	defer rows.Close()
+
+	var logs []models.Log
+	for rows.Next() {
+		var logEntry models.Log
+
+		if err := rows.Scan(
+			&logEntry.Time,
+			&logEntry.Type,
+			&logEntry.Source,
+			&logEntry.Destination,
+			&logEntry.Port,
+			&logEntry.Protocol,
+			&logEntry.Severity,
 		); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue

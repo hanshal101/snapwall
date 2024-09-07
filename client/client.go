@@ -16,7 +16,7 @@ import (
 )
 
 func getBpfFilter(logType string) string {
-	excludePort := "not port 5051 and not port 22 and not port 63262 and not port 62616"
+	excludePort := "not port 5051 and not port 22 and not port 63262 and not port 62616 and not port 8888"
 
 	switch logType {
 	case "http":

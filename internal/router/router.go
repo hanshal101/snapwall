@@ -27,4 +27,5 @@ func LogRoutes(r *gin.RouterGroup) {
 	r.GET("", logs.GetLogs)
 	r.GET("/port/:portNumber", logs.GetLogsByPort)
 	r.GET("/:ioType/ip/:ipAddress", logs.GetLogsByIP)
+	r.GET("/intruder", logs.GetIntruderLogs)
 }
