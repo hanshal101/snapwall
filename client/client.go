@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	snapwall "github.com/hanshal101/snapwall/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func getBpfFilter(logType string) string {
@@ -34,37 +34,7 @@ func getBpfFilter(logType string) string {
 	}
 }
 
-// func identifyService(port layers.TCPPort) string {
-// 	switch port {
-// 	case 80:
-// 		return "HTTP"
-// 	case 443:
-// 		return "HTTPS"
-// 	case 22:
-// 		return "SSH"
-// 	case 53:
-// 		return "DNS"
-// 	default:
-// 		return "Unknown Service"
-// 	}
-// }
-
-type Policy struct {
-	Name  string
-	Ports []string
-	IPs   []string
-	Type  bool
-}
-
 func main() {
-	// policies := []Policy{
-	// 	Policy{
-	// 		Name:  "pol-1",
-	// 		Ports: []string{":80", "443"},
-	// 		IPs:   []string{"192.168.200.1"},
-	// 		Type:  false,
-	// 	},
-	// }
 
 	logType := flag.String("log", "all", "Type of logs to capture (http, tcp, udp, all-scans, icmp, all)")
 	iface := flag.String("iface", "\\Device\\NPF_{A4770599-05C8-4E3F-8715-3D51E41B74BE}", "Your Network Packet destination")
@@ -110,7 +80,7 @@ func main() {
 		if networkLayer != nil && transportLayer != nil {
 			srcIP, dstIP := networkLayer.NetworkFlow().Src().String(), networkLayer.NetworkFlow().Dst().String()
 
-			direction := "Unknown"
+			direction := "Outgoing"
 			if contains(localIPs, srcIP) {
 				direction = "Outgoing"
 			} else if contains(localIPs, dstIP) {
@@ -129,35 +99,19 @@ func main() {
 			case *layers.UDPLite:
 				port = fmt.Sprintf("%d", layer.DstPort)
 				protocol = "UDP"
-			// case *layers.NortelDiscovery:
-			// 	port = fmt.Sprintf("%d", layer.DstPort)
-			// 	protocol = "UDP"
 			default:
+				protocol = "Unknown"
 				continue
 			}
 
 			req := &snapwall.ServiceRequest{
-				Time:        timestamppb.Now(),
+				Time:        time.Now().String(),
 				Type:        direction,
 				Source:      srcIP,
 				Destination: dstIP,
 				Port:        port,
 				Protocol:    protocol,
 			}
-
-			// isAllowed := true
-			// for _, pol := range policies {
-			// 	if !pol.Type {
-			// 		isAllowed = matchPolicies(pol, req)
-			// 	} else {
-			// 		isAllowed = true
-			// 	}
-			// }
-
-			// if !isAllowed {
-			// 	log.Printf("SKIPPING PORT: %v, Source: %v, Destination: %v, Direction: %v", port, srcIP, dstIP, direction)
-			// 	continue
-			// }
 
 			go func(req *snapwall.ServiceRequest) {
 				stream, err := client.Send(context.Background())

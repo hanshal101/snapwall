@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"regexp"
+	"time"
 
 	"github.com/hanshal101/snapwall/database/clickhouse"
 	"github.com/hanshal101/snapwall/database/psql"
@@ -49,11 +52,19 @@ func (s *Server) Send(
 			inp.Severity = "LOW"
 		}
 
-		fmt.Println("SEV:", inp.Severity)
+		iTime, err := convTime(inp.Time)
+		if err != nil {
+			return fmt.Errorf("error in converting time: %v", err)
+		}
+
+		// if true {
+		// 	fmt.Println(iTime)
+		// 	return nil
+		// }
 
 		log.Printf("Storing in Clickhouse: %v\n", inp)
 		if err := logs.StoreLogs(context.Background(), &models.Log{
-			Time:        inp.Time.AsTime(),
+			Time:        iTime,
 			Source:      inp.Source,
 			Destination: inp.Destination,
 			Type:        inp.Type,
@@ -102,6 +113,27 @@ func matchPolicy(inp *snapwall.ServiceRequest) bool {
 	}
 
 	return false
+}
+
+func convTime(s string) (time.Time, error) {
+	// Define a regex pattern to match the timestamp and exclude extra text.
+	re := regexp.MustCompile(`^(.+?)\s+[\+\-]\d{4}\s+(\w+)\s*`)
+	matches := re.FindStringSubmatch(s)
+
+	if len(matches) < 2 {
+		return time.Time{}, fmt.Errorf("unable to parse timestamp: %s", s)
+	}
+
+	// Extract the cleaned timestamp part.
+	cleanedTimestamp := matches[1]
+
+	// Parse the cleaned timestamp.
+	t, err := time.Parse(os.Getenv("TIME_FORMAT"), cleanedTimestamp)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error parsing time: %v", err)
+	}
+
+	return t, nil
 }
 
 func main() {

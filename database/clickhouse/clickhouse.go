@@ -21,8 +21,8 @@ func InitClickhouse(ctx context.Context) {
 			Password: os.Getenv("CLICKHOUSE_PASSWORD"),
 		},
 		Debug:           true,
-		MaxOpenConns:    20,
-		MaxIdleConns:    5,
+		MaxOpenConns:    50,
+		MaxIdleConns:    50,
 		ConnMaxLifetime: time.Hour,
 	})
 	if err != nil {

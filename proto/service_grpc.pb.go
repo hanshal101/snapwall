@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Sender_Send_FullMethodName = "/service.Sender/Send"
+	Sender_Send_FullMethodName         = "/service.Sender/Send"
+	Sender_SendNodeData_FullMethodName = "/service.Sender/SendNodeData"
 )
 
 // SenderClient is the client API for Sender service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SenderClient interface {
 	Send(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ServiceRequest, ServiceResponse], error)
+	SendNodeData(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[NodeRequest, NodeResponse], error)
 }
 
 type senderClient struct {
@@ -50,11 +52,25 @@ func (c *senderClient) Send(ctx context.Context, opts ...grpc.CallOption) (grpc.
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Sender_SendClient = grpc.BidiStreamingClient[ServiceRequest, ServiceResponse]
 
+func (c *senderClient) SendNodeData(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[NodeRequest, NodeResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Sender_ServiceDesc.Streams[1], Sender_SendNodeData_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[NodeRequest, NodeResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Sender_SendNodeDataClient = grpc.BidiStreamingClient[NodeRequest, NodeResponse]
+
 // SenderServer is the server API for Sender service.
 // All implementations must embed UnimplementedSenderServer
 // for forward compatibility.
 type SenderServer interface {
 	Send(grpc.BidiStreamingServer[ServiceRequest, ServiceResponse]) error
+	SendNodeData(grpc.BidiStreamingServer[NodeRequest, NodeResponse]) error
 	mustEmbedUnimplementedSenderServer()
 }
 
@@ -67,6 +83,9 @@ type UnimplementedSenderServer struct{}
 
 func (UnimplementedSenderServer) Send(grpc.BidiStreamingServer[ServiceRequest, ServiceResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Send not implemented")
+}
+func (UnimplementedSenderServer) SendNodeData(grpc.BidiStreamingServer[NodeRequest, NodeResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method SendNodeData not implemented")
 }
 func (UnimplementedSenderServer) mustEmbedUnimplementedSenderServer() {}
 func (UnimplementedSenderServer) testEmbeddedByValue()                {}
@@ -96,6 +115,13 @@ func _Sender_Send_Handler(srv interface{}, stream grpc.ServerStream) error {
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Sender_SendServer = grpc.BidiStreamingServer[ServiceRequest, ServiceResponse]
 
+func _Sender_SendNodeData_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SenderServer).SendNodeData(&grpc.GenericServerStream[NodeRequest, NodeResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Sender_SendNodeDataServer = grpc.BidiStreamingServer[NodeRequest, NodeResponse]
+
 // Sender_ServiceDesc is the grpc.ServiceDesc for Sender service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -107,6 +133,12 @@ var Sender_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Send",
 			Handler:       _Sender_Send_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "SendNodeData",
+			Handler:       _Sender_SendNodeData_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

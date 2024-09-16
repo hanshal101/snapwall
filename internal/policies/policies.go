@@ -220,3 +220,20 @@ func DeletePolicy(c *gin.Context) {
 	tx.Commit()
 	c.JSON(http.StatusOK, gin.H{"success": "Policy Deleted Successfully"})
 }
+
+func GetPoliciesbyIPs(c *gin.Context) {
+	ipAddr := c.Param("ipAddr")
+	var policies []models.Policy
+
+	if err := psql.DB.Joins("JOIN ips ON ips.policy_id = policies.id").
+		Where("ips.address = ?", ipAddr).
+		Find(&policies).Preload("Port").Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch policies"})
+		return
+	}
+	if len(policies) < 1 {
+		c.JSON(http.StatusOK, gin.H{"success": "No policies found"})
+		return
+	}
+	c.JSON(http.StatusOK, policies)
+}

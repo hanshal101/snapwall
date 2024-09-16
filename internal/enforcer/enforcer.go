@@ -70,7 +70,6 @@ func enforceRule(ipt *iptables.IPTables, ip, port string) error {
 }
 
 func deforceRule(ipt *iptables.IPTables, ip, port string) error {
-	// Print the iptables command being executed for debugging
 	log.Printf("Executing: iptables -D INPUT -s %s -p tcp --dport %s -j DROP\n", ip, port)
 
 	err := ipt.Delete("filter", "INPUT", "-s", ip, "-p", "tcp", "--dport", port, "-j", "DROP")

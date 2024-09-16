@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hanshal101/snapwall/database/clickhouse"
 	"github.com/hanshal101/snapwall/models"
 )
-
-func formatTimestamp(t time.Time) string {
-	return t.Format("2006-01-02 15:04:05")
-}
 
 func StoreLogs(ctx context.Context, data *models.Log) error {
 	createTableQuery := `
@@ -37,8 +32,6 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 		return err
 	}
 
-	formattedTime := formatTimestamp(data.Time)
-
 	batch, err := clickhouse.CHClient.PrepareBatch(ctx, `
 		INSERT INTO service_logs (time, type, source, destination, port, protocol, severity) VALUES (?, ?, ?, ?, ?, ?, ?)
 	`)
@@ -47,7 +40,7 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 		return err
 	}
 
-	if err := batch.Append(formattedTime, data.Type, data.Source, data.Destination, data.Port, data.Protocol, data.Severity); err != nil {
+	if err := batch.Append(data.Time, data.Type, data.Source, data.Destination, data.Port, data.Protocol, data.Severity); err != nil {
 		log.Fatalf("Error appending data to batch: %v", err)
 		return err
 	}

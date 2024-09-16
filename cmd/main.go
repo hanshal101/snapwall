@@ -30,12 +30,11 @@ func init() {
 }
 
 func main() {
-	// go enforcer.ReconcileEnforcer(ctx, 5*time.Second)
 	r := gin.Default()
 	r.Use(cors.Default())
 
 	r.GET("/sysinfo", sysinfo.GetSystemInfo)
-
+	r.GET("/node", sysinfo.ServeNodeInfo)
 	// POLICY Routes
 	policy := r.Group("/policies")
 	router.PolicyRoutes(policy)
@@ -44,6 +43,13 @@ func main() {
 	log := r.Group("/logs")
 	router.LogRoutes(log)
 
+	// CHECKOUT Routes
+	checkout := r.Group("/checkout")
+	router.CheckoutRoutes(checkout)
+
+	// APPLICATION Routes
+	application := r.Group("/application")
+	router.ApplicationRoutes(application)
+
 	r.Run(os.Getenv("APP_ADDRESS"))
-	// select {}
 }

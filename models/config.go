@@ -55,3 +55,17 @@ type SystemInfo struct {
 	HostInfo   *host.InfoStat         `json:"host_info"`
 	Uptime     uint64                 `json:"uptime"`
 }
+
+// APPLICATION Models
+type Application struct {
+	gorm.Model
+	Name        string `json:"name"`
+	Port        string `json:"port"`
+	Description string `json:"description"`
+	Tags        []Tags `json:"tags" gorm:"foreignKey:ApplicationID;constraint:OnDelete:CASCADE;"`
+}
+
+type Tags struct {
+	ApplicationID uint   `json:"application_id"`
+	Tag           string `json:"tag"`
+}
