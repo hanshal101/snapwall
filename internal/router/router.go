@@ -15,11 +15,11 @@ func PolicyRoutes(r *gin.RouterGroup) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 	// Implement Policy Routes
-	r.GET("", policies.GetPolicies)
-	r.POST("", policies.CreatePolicies)
-	r.PUT("/:policyID", policies.UpdatePolicies)
-	r.DELETE("/:policyID", policies.DeletePolicy)
-	r.GET("/:ipAddr", policies.GetPoliciesbyIPs)
+	r.GET("/:applicationID", policies.GetPolicies)
+	r.POST("/:applicationID/:type", policies.CreatePolicies)
+	r.PUT("/:applicationID/:policyID", policies.UpdatePolicies)
+	r.DELETE("/:applicationID/:policyID", policies.DeletePolicy)
+	// r.GET("/:ipAddr", policies.GetPoliciesbyIPs)
 }
 
 func LogRoutes(r *gin.RouterGroup) {
@@ -27,9 +27,8 @@ func LogRoutes(r *gin.RouterGroup) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 	// Implement log routes
-	r.GET("", logs.GetLogs)
+	r.GET("/:applicationID", logs.GetLogs)
 	r.GET("/port/:portNumber", logs.GetLogsByPort)
-	r.GET("/:ioType/ip/:ipAddress", logs.GetLogsByIP)
 	r.GET("/intruder", logs.GetIntruderLogs)
 }
 
@@ -45,4 +44,8 @@ func ApplicationRoutes(r *gin.RouterGroup) {
 	// r.PUT("/ports")
 	r.DELETE("/:applicationID", application.DeleteApplication)
 	r.GET("/port/:portNumber", application.GetApplicationsbyPort)
+
+	r.GET("/:applicationID/policies")
+	r.POST("/:applicationID/policies/:type")
+	r.DELETE("/:applicationID/policies/:type/:policyID")
 }

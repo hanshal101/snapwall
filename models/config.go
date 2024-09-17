@@ -12,7 +12,7 @@ import (
 
 type SEVERITY string
 
-const (
+var (
 	SEVERITY_LOW    SEVERITY = "LOW"
 	SEVERITY_MEDIUM SEVERITY = "MEDIUM"
 	SEVERITY_HIGH   SEVERITY = "HIGH"
@@ -20,10 +20,11 @@ const (
 
 type Policy struct {
 	gorm.Model
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	IPs   []IP   `json:"ips" gorm:"foreignKey:PolicyID;constraint:OnDelete:CASCADE;"`
-	Ports []Port `json:"ports" gorm:"foreignKey:PolicyID;constraint:OnDelete:CASCADE;"`
+	ApplicationID uint   `json:"application_id"`
+	Name          string `json:"name"`
+	Type          string `json:"type"`
+	IPs           []IP   `json:"ips" gorm:"foreignKey:PolicyID;constraint:OnDelete:CASCADE;"`
+	Ports         []Port `json:"ports" gorm:"foreignKey:PolicyID;constraint:OnDelete:CASCADE;"`
 }
 
 type IP struct {
@@ -39,13 +40,16 @@ type Port struct {
 }
 
 type Log struct {
+	gorm.Model
 	Time        time.Time `json:"time"`
 	Type        string    `json:"type"`
 	Source      string    `json:"source"`
 	Destination string    `json:"destination"`
 	Port        string    `json:"port"`
 	Protocol    string    `json:"protocol"`
-	Severity    string    `json:"severity"`
+	Severity    string    `json:"severity"` // Changed to SEVERITY type
+	PID         int32     `json:"pid"`
+	Path        string    `json:"path"`
 }
 
 type SystemInfo struct {
@@ -56,16 +60,19 @@ type SystemInfo struct {
 	Uptime     uint64                 `json:"uptime"`
 }
 
-// APPLICATION Models
+// Application Models
 type Application struct {
 	gorm.Model
 	Name        string `json:"name"`
+	Path        string `json:"path"`
+	PID         string `json:"pid"`
 	Port        string `json:"port"`
 	Description string `json:"description"`
-	Tags        []Tags `json:"tags" gorm:"foreignKey:ApplicationID;constraint:OnDelete:CASCADE;"`
+	Tags        []Tag  `json:"tags" gorm:"foreignKey:ApplicationID;constraint:OnDelete:CASCADE;"`
 }
 
-type Tags struct {
+type Tag struct {
+	gorm.Model
 	ApplicationID uint   `json:"application_id"`
 	Tag           string `json:"tag"`
 }

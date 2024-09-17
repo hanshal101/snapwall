@@ -57,11 +57,6 @@ func (s *Server) Send(
 			return fmt.Errorf("error in converting time: %v", err)
 		}
 
-		// if true {
-		// 	fmt.Println(iTime)
-		// 	return nil
-		// }
-
 		log.Printf("Storing in Clickhouse: %v\n", inp)
 		if err := logs.StoreLogs(context.Background(), &models.Log{
 			Time:        iTime,
@@ -71,6 +66,8 @@ func (s *Server) Send(
 			Port:        inp.Port,
 			Protocol:    inp.Protocol,
 			Severity:    inp.Severity,
+			PID:         inp.Pid,
+			Path:        inp.Path,
 		}); err != nil {
 			log.Printf("Error in storing logs:\n Log: %v\n Error: %v\n", inp, err)
 			return err
@@ -84,6 +81,8 @@ func (s *Server) Send(
 			Port:        inp.Port,
 			Protocol:    inp.Protocol,
 			Severity:    inp.Severity,
+			Pid:         inp.Pid,
+			Path:        inp.Path,
 		}
 
 		if err := stream.Send(resp); err != nil {

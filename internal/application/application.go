@@ -12,6 +12,8 @@ import (
 type CreateApplicationRequest struct {
 	Name        string   `json:"name"`
 	Port        string   `json:"port"`
+	Path        string   `json:"path"`
+	PID         string   `json:"pid"`
 	Description string   `json:"description"`
 	Tags        []string `json:"tags"`
 }
@@ -38,11 +40,13 @@ func CreateApplication(c *gin.Context) {
 		Name:        request.Name,
 		Port:        request.Port,
 		Description: request.Description,
+		Path:        request.Path,
+		PID:         request.PID,
 	}
 
-	var tags []models.Tags
+	var tags []models.Tag
 	for _, tagReq := range request.Tags {
-		tags = append(tags, models.Tags{
+		tags = append(tags, models.Tag{
 			ApplicationID: application.ID,
 			Tag:           tagReq,
 		})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hanshal101/snapwall/database/psql"
@@ -19,8 +20,9 @@ type PolicyRequest struct {
 }
 
 func GetPolicies(c *gin.Context) {
+	applicationID := c.Param("applicationID")
 	var policies []models.Policy
-	if err := psql.DB.Preload("IPs").Preload("Ports").Find(&policies).Error; err != nil {
+	if err := psql.DB.Preload("IPs").Preload("Ports").Where("application_id = ?", applicationID).Find(&policies).Error; err != nil {
 		log.Printf("Error in fetching policies: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in fetching policies"})
 		return
@@ -29,6 +31,16 @@ func GetPolicies(c *gin.Context) {
 }
 
 func CreatePolicies(c *gin.Context) {
+	applicationID := c.Param("applicationID")
+	policy_type := c.Param("type")
+
+	u_appID, err := strconv.Atoi(applicationID)
+	if err != nil {
+		log.Printf("Cannot conv application id : %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
 	var req PolicyRequest
 	if err := c.BindJSON(&req); err != nil {
 		log.Printf("Error in binding policies: %v", err)
@@ -36,18 +48,30 @@ func CreatePolicies(c *gin.Context) {
 		return
 	}
 
+	if policy_type == "ingress" {
+		req.Type = "INGRESS"
+	} else if policy_type == "egress" {
+		req.Type = "EGRESS"
+	} else {
+		req.Type = "N.A."
+	}
+
+	var application models.Application
+
 	tx := psql.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 			log.Printf("Transaction rolled back due to panic: %v", r)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			return
 		}
 	}()
 
 	policy := models.Policy{
-		Name: req.Name,
-		Type: req.Type,
+		Name:          req.Name,
+		Type:          req.Type,
+		ApplicationID: uint(u_appID),
 	}
 
 	if err := tx.Create(&policy).Error; err != nil {
@@ -87,7 +111,14 @@ func CreatePolicies(c *gin.Context) {
 		ports = append(ports, pt)
 	}
 
-	if err := enforcer.ReconcileEnforcer(context.TODO(), policy, ips, ports); err != nil {
+	if err := tx.Where("id = ?", applicationID).Find(&application).Error; err != nil {
+		tx.Rollback()
+		log.Printf("Error in fetching applciations: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in fetching applciations"})
+		return
+	}
+
+	if err := enforcer.ReconcileEnforcer(context.TODO(), policy, ips, ports, application); err != nil {
 		log.Fatalf("Error in enforcement: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in creating Ports"})
 		return
@@ -171,10 +202,11 @@ func UpdatePolicies(c *gin.Context) {
 }
 
 func DeletePolicy(c *gin.Context) {
+	applicationID := c.Param("applicationID")
 	id := c.Param("policyID")
 
 	var policy models.Policy
-	if err := psql.DB.Where("id = ?", id).Preload("IPs").Preload("Ports").Find(&policy).Error; err != nil {
+	if err := psql.DB.Where("id = ?", id).Preload("IPs").Preload("Ports").Where("application_id = ?", applicationID).Find(&policy).Error; err != nil {
 		log.Printf("Error in fetching policies: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in fetching policies"})
 		return

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -35,6 +36,15 @@ func main() {
 
 	r.GET("/sysinfo", sysinfo.GetSystemInfo)
 	r.GET("/node", sysinfo.ServeNodeInfo)
+
+	r.GET("/test", func(ctx *gin.Context) {
+		bd, err := http.Get("http://192.168.200.1:5465")
+		if err != nil {
+			log.Fatalf("error : %v\n", err.Error())
+			return
+		}
+		ctx.JSON(http.StatusOK, bd.Body)
+	})
 	// POLICY Routes
 	policy := r.Group("/policies")
 	router.PolicyRoutes(policy)

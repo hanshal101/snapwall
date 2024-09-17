@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hanshal101/snapwall/database/clickhouse"
+	"github.com/hanshal101/snapwall/database/psql"
 	"github.com/hanshal101/snapwall/models"
 )
 
@@ -20,7 +21,9 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 			destination String,
 			port String,
 			protocol String,
-			severity String
+			severity String,
+			pid Int32,
+			path String
 		) ENGINE = MergeTree()
 		ORDER BY (time, source, destination)
 		PRIMARY KEY (time, source, destination)
@@ -33,14 +36,14 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 	}
 
 	batch, err := clickhouse.CHClient.PrepareBatch(ctx, `
-		INSERT INTO service_logs (time, type, source, destination, port, protocol, severity) VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO service_logs (time, type, source, destination, port, protocol, severity, pid, path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		log.Fatalf("Error preparing batch insert statement: %v", err)
 		return err
 	}
 
-	if err := batch.Append(data.Time, data.Type, data.Source, data.Destination, data.Port, data.Protocol, data.Severity); err != nil {
+	if err := batch.Append(data.Time, data.Type, data.Source, data.Destination, data.Port, data.Protocol, data.Severity, data.PID, data.Path); err != nil {
 		log.Fatalf("Error appending data to batch: %v", err)
 		return err
 	}
@@ -55,11 +58,20 @@ func StoreLogs(ctx context.Context, data *models.Log) error {
 }
 
 func GetLogs(c *gin.Context) {
+	applicationID := c.Param("applicationID")
 	query := `
-		SELECT time, type, source, destination, port, protocol, severity
+		SELECT time, type, source, destination, port, protocol, severity, pid, path
 		FROM service_logs
+		WHERE path = ?
 	`
-	rows, err := clickhouse.CHClient.Query(context.TODO(), query)
+	var application models.Application
+	if err := psql.DB.Where("id = ?", applicationID).Find(&application).Error; err != nil {
+		log.Fatalf("Error fetching application: %v", err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Error fetching application"})
+		return
+	}
+
+	rows, err := clickhouse.CHClient.Query(context.TODO(), query, application.Path)
 	if err != nil {
 		log.Fatalf("Error executing query: %v", err)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Error executing query"})
@@ -79,6 +91,8 @@ func GetLogs(c *gin.Context) {
 			&logEntry.Port,
 			&logEntry.Protocol,
 			&logEntry.Severity,
+			&logEntry.PID,
+			&logEntry.Path,
 		); err != nil {
 			log.Fatalf("Error scanning row: %v", err)
 			c.JSON(http.StatusBadGateway, gin.H{"error": "Error scanning row"})
@@ -101,7 +115,7 @@ func GetLogsByPort(c *gin.Context) {
 	port := c.Param("portNumber")
 
 	query := `
-        SELECT time, type, source, destination, port, protocol, severity
+        SELECT time, type, source, destination, port, protocol, severity, pid, path
         FROM service_logs
         WHERE port = ?
     `
@@ -126,6 +140,8 @@ func GetLogsByPort(c *gin.Context) {
 			&logEntry.Port,
 			&logEntry.Protocol,
 			&logEntry.Severity,
+			&logEntry.PID,
+			&logEntry.Path,
 		); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue
@@ -148,7 +164,7 @@ func GetLogsByIP(c *gin.Context) {
 	ipAddress := c.Param("ipAddress")
 
 	query := fmt.Sprintf(`
-        SELECT time, type, source, destination, port, protocol, severity
+        SELECT time, type, source, destination, port, protocol, severity, pid, path
         FROM service_logs
         WHERE %s = ?
     `, ioType)
@@ -173,6 +189,8 @@ func GetLogsByIP(c *gin.Context) {
 			&logEntry.Port,
 			&logEntry.Protocol,
 			&logEntry.Severity,
+			&logEntry.PID,
+			&logEntry.Path,
 		); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue
@@ -192,7 +210,7 @@ func GetLogsByIP(c *gin.Context) {
 
 func GetIntruderLogs(c *gin.Context) {
 	query := `
-        SELECT time, type, source, destination, port, protocol, severity
+        SELECT time, type, source, destination, port, protocol, severity, pid, path
         FROM service_logs
         WHERE severity = ?
     `
@@ -217,6 +235,8 @@ func GetIntruderLogs(c *gin.Context) {
 			&logEntry.Port,
 			&logEntry.Protocol,
 			&logEntry.Severity,
+			&logEntry.PID,
+			&logEntry.Path,
 		); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			continue

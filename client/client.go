@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	snapwall "github.com/hanshal101/snapwall/proto"
+	"github.com/shirou/gopsutil/process"
 	"google.golang.org/grpc"
 )
 
@@ -32,6 +34,30 @@ func getBpfFilter(logType string) string {
 	default:
 		return excludePort
 	}
+}
+
+func getProcessInfo(port uint32) (int32, string, error) {
+	procs, err := process.Processes()
+	if err != nil {
+		return 0, "", err
+	}
+
+	for _, proc := range procs {
+		pids, err := proc.Connections()
+		if err != nil {
+			continue
+		}
+		for _, conn := range pids {
+			if conn.Laddr.Port == port || conn.Raddr.Port == port {
+				exe, err := proc.Exe()
+				if err != nil {
+					continue
+				}
+				return proc.Pid, exe, nil
+			}
+		}
+	}
+	return 0, "", nil
 }
 
 func main() {
@@ -104,6 +130,18 @@ func main() {
 				continue
 			}
 
+			portNum, err := strconv.ParseUint(port, 10, 32)
+			if err != nil {
+				fmt.Println("Error converting port:", err)
+				return
+			}
+
+			pid, pth, err := getProcessInfo(uint32(portNum))
+			if err != nil {
+				fmt.Println("Error getting process info:", err)
+				return
+			}
+
 			req := &snapwall.ServiceRequest{
 				Time:        time.Now().String(),
 				Type:        direction,
@@ -111,8 +149,9 @@ func main() {
 				Destination: dstIP,
 				Port:        port,
 				Protocol:    protocol,
+				Pid:         pid,
+				Path:        pth,
 			}
-
 			go func(req *snapwall.ServiceRequest) {
 				stream, err := client.Send(context.Background())
 				if err != nil {
@@ -131,8 +170,8 @@ func main() {
 					return
 				}
 
-				fmt.Printf("Response from server: Time: %s | Source: %s | Destination: %s | Type: %s | Port: %s | Protocol: %s | Severity: %s\n",
-					resp.Time, resp.Source, resp.Destination, resp.Type, resp.Port, resp.Protocol, resp.Severity)
+				fmt.Printf("Response from server: Time: %s | Source: %s | Destination: %s | Type: %s | Port: %s | Protocol: %s | Severity: %s | PID: %d | Path: %s\n",
+					resp.Time, resp.Source, resp.Destination, resp.Type, resp.Port, resp.Protocol, resp.Severity, pid, pth)
 			}(req)
 		}
 	}

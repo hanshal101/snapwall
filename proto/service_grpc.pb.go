@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.21.12
-// source: service.proto
+// source: proto/service.proto
 
 package snapwall
 
@@ -143,5 +143,5 @@ var Sender_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "service.proto",
+	Metadata: "proto/service.proto",
 }

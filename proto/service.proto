@@ -18,6 +18,8 @@ message ServiceRequest {
     string port = 5;
     string protocol = 6;
     string severity = 7;
+    int32 pid = 8;
+    string path = 9;
 }
 
 
@@ -29,6 +31,8 @@ message ServiceResponse {
     string port = 5;
     string protocol = 6;
     string severity = 7;
+    int32 pid = 8;
+    string path = 9;
 }
 
 message NodeRequest {
